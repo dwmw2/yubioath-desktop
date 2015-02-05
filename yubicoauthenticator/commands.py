@@ -223,15 +223,29 @@ def unlock_applet(neo, password):
 	
 	install_id = functions.get_id(neo) #get id
 	challenge = functions.get_challenge(neo) #get challenge
+        password_utf8 = password.encode('utf-8').strip()
 
-	key = PBKDF2(password, install_id).read(16)
+	key = PBKDF2(password_utf8, install_id).read(16)
 	response = hmac.new(key, challenge, hashlib.sha1).digest()
 	cmd = commands['unlock']
 	payload = functions.unlock_payload(response)
 
 	try:
-		result = neo._cmd_ok(cmd['cl'], cmd['ins'], cmd['p1'], cmd['p2'], payload)
-		neo.password_protected = False	
+		data, status = neo._cmd(cmd['cl'], cmd['ins'], cmd['p1'], cmd['p2'], payload)
+		if status == 0x6a80:
+			password_8bit = ""
+			for x in range(0, len(password)):
+				char = ord(password[x]) & 0xff
+				password_8bit += chr(char)
+			if password_8bit != password_utf8:
+				key = PBKDF2(password_8bit, install_id).read(16)
+				response = hmac.new(key, challenge, hashlib.sha1).digest()
+				payload = functions.unlock_payload(response)
+				data, status = neo._cmd(cmd['cl'], cmd['ins'], cmd['p1'], cmd['p2'], payload)
+		if status != 0x9000:
+			raise Exception('APDU eror: 0x%04x' % status)
+
+                neo.password_protected = False
 		return True
 	except Exception, e:
 		#set the NEO to none as we will need to check for password again
