@@ -228,7 +228,8 @@ if __name__ == "__main__":
 			#check if it is password protected
 			if is_protected:
 				#hide icon to avoid double clicks and glitches.
-				password, ok = QtGui.QInputDialog.getText(self, "Password", "Password:", QtGui.QLineEdit.Password)
+				main_window = Window()
+				password, ok = QtGui.QInputDialog.getText(main_window, "Password", "Password:", QtGui.QLineEdit.Password)
 				if ok:
 				#do soemthing
 					if yc.unlock_applet(neo, password):
